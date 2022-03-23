@@ -1,7 +1,7 @@
 """A short description of the project (less than one line)."""
 
 # Add imports here
-from .synthetic_md import *
+# from .synthetic_md import *
 
 # Handle versioneer
 from ._version import get_versions
