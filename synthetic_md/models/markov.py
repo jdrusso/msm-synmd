@@ -114,6 +114,31 @@ class GenerativeHistoryAugmentedMarkovModel(GenerativeMarkovModel):
         self.transition_matrices = np.array(transition_matrices)
         self.macrostate_defs = np.array(macrostate_defs)
 
+        # The number of states in each color
+        self.color_states = [np.arange(len(x)) for x in self.transition_matrices]
+
+    def backmap(self, _dtrajs, subsample=1):
+        """
+        Map discrete trajectories to full-coordinate trajectories.
+
+        :param _dtrajs: Array-like of discrete integer trajectories
+        :param subsample: Only backmap every Nth frame
+        :return: Full-coordinate trajectories
+        """
+
+        _continuous_trajectories = []
+
+        for dtraj in tqdm.tqdm(_dtrajs, desc="Backmapping trajectories.."):
+
+            _continuous_trajectory = map(self.assign_structure,
+                                         # tqdm.tqdm(dtraj, desc="\t Backmapping", leave=False))
+                                         dtraj[::subsample])
+
+            _continuous_trajectories.append(list(_continuous_trajectory))
+
+        return np.array(_continuous_trajectories)
+
+
     def generate_discrete_trajectories(self, n_steps, initial_states, n_trajectories=1):
         """
         Generate discrete trajectories.
@@ -128,9 +153,9 @@ class GenerativeHistoryAugmentedMarkovModel(GenerativeMarkovModel):
             "Number of initial positions doesn't match number of trajectories."
 
         initial_states = np.array(initial_states)
-        states = np.arange(self.transition_matrices.shape[1])
 
-        generated_trajectories = np.empty(shape=(n_trajectories, n_steps), dtype=int)
+        # For an haMSM, this tracks both state index and color at every time
+        generated_trajectories = np.empty(shape=(n_trajectories, n_steps, 2), dtype=int)
         generated_trajectories[:, 0] = initial_states
 
         # Generate the discrete trajectory by sampling a Markov chain
@@ -138,19 +163,44 @@ class GenerativeHistoryAugmentedMarkovModel(GenerativeMarkovModel):
 
             for _trajectory in range(n_trajectories):
 
-                color = 0
                 for _step in range(1, n_steps):
 
-                    previous_state = generated_trajectories[_trajectory, _step - 1]
+                    previous_state, previous_color = generated_trajectories[_trajectory, _step - 1]
 
-                    # Update the color if the last step was in a macrostate.
-                    if np.isin(previous_state, self.macrostate_defs):
-                        color = np.argwhere(np.isin(previous_state, self.macrostate_defs))[0][0]
+                    transition_probabilities = self.transition_matrices[previous_color][previous_state]
 
-                    transition_probabilities = self.transition_matrices[color][previous_state]
+                    try:
+                        next_state = self.rng.choice(self.color_states[previous_color], p=transition_probabilities)
+                    except ValueError as e:
+                        print(f"Error when getting probabilities for "
+                              f"last state {previous_state} last color {previous_color}")
+                        print(f"Previous 5 steps were {generated_trajectories[_trajectory, _step -5:_step]}")
+                        raise e
 
-                    next_state = self.rng.choice(states, p=transition_probabilities)
-                    generated_trajectories[_trajectory, _step] = next_state
+                    # To determine the next color, check which macrostate this next state is in
+                    next_in_macrostate = np.array([np.isin(next_state, x) for x in self.macrostate_defs])
+                    if next_in_macrostate.any():
+                        # Add +1 because state 0 is last-in none
+                        next_color = np.argwhere(next_in_macrostate).flatten()[0] + 1
+                    else:
+                        # If the next step is NOT in any particular macrostate, just assign it the previous color
+                        next_color = previous_color
+
+                    # I know the color at this time, and I'm about to make a step
+                    # That next step will be in my current color's definition
+
+                    # 1. Take the previous state and color
+                    # 2. Using the previous color, pick my haMSM
+                    # 3. Using the previous state, pick my row
+                    #       If I switched MSMs (i.e. a new color), how do I know which state to go to in the new haMSM?
+                    #       Maybe I DO need consistent state definitions between the two, then I'm just adjusting
+                    #       the transition probabilities when I switch colors.
+                    #       NOTE: For now, assume consistent state definitions
+                    # 4. Choose my next state
+                    # 5. Determine my next color
+                    # 6. Next state and color
+
+                    generated_trajectories[_trajectory, _step] = [next_state, next_color]
 
                     pbar.update(1)
 
