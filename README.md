@@ -1,8 +1,8 @@
 synthetic_md
 ==============================
-[//]: # (Badges)
+<!-- [//]: # (Badges)
 [![GitHub Actions Build Status](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/workflows/CI/badge.svg)](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/branch/master)
+[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/branch/master) -->
 
 
 See `notebooks/generate_trajectories.ipynb` for example usage
