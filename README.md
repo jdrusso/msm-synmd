@@ -5,7 +5,7 @@ synthetic_md
 [![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/synthetic_md/branch/master)
 
 
-A short description of the project (less than one line).
+See `notebooks/generate_trajectories.ipynb` for example usage
 
 ### Copyright
 
